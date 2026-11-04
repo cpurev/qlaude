@@ -3,7 +3,7 @@
 FROM node:26-slim
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ripgrep ca-certificates \
+ && apt-get install -y --no-install-recommends git ripgrep curl ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
