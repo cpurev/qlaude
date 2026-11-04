@@ -8,7 +8,7 @@ const client = new OpenAI({
   apiKey: "ollama", // required by the client, ignored by Ollama
 });
 const MODEL = process.env.QLAUDE_MODEL ?? "qlaude";
-const MAX_STEPS = 30; // per agent; small models can loop forever
+const MAX_STEPS = 60; // per agent; small models can loop forever
 const MAX_DEPTH = 3; // each level summarizes the one below and loses detail
 
 /* Thinking makes every step ~20x slower on a laptop, so it's off unless asked for. */
@@ -35,6 +35,7 @@ export type Ctx = { role: Role; depth: number; budget: { steps: number }; ask: A
 
 const RESERVE_PER_PARENT = 3; // steps kept back so every parent can still write its report
 const MAX_BLOCKED_REPEATS = 3;
+const MAX_NUDGES = 3; // times an agent is sent back to work after stopping too early
 
 export const newBudget = () => ({ steps: Number(process.env.QLAUDE_BUDGET ?? 200) });
 
@@ -128,6 +129,7 @@ export async function runTurn(messages: OpenAI.ChatCompletionMessageParam[], ctx
   let lastCall = "";
   let repeats = 0;
   let blocked = 0;
+  let nudges = 0;
   let text = "";
 
   for (let step = 0; step < MAX_STEPS; step++) {
@@ -142,7 +144,14 @@ export async function runTurn(messages: OpenAI.ChatCompletionMessageParam[], ctx
     const msg = await callModel(messages, toolsFor(ctx));
     messages.push(msg);
     if (typeof msg.content === "string" && msg.content.trim()) text = msg.content.trim();
-    if (!msg.tool_calls?.length) return { text, finished: true };
+    if (!msg.tool_calls?.length) {
+      const nudge = nudges < MAX_NUDGES ? await unfinished(text, ctx) : null;
+      if (!nudge) return { text, finished: true };
+      nudges++;
+      out(gray("(not done yet: sent back to work)\n"));
+      messages.push({ role: "user", content: nudge });
+      continue;
+    }
 
     for (const call of msg.tool_calls) {
       if (call.type !== "function") continue;
@@ -188,6 +197,24 @@ export async function runTurn(messages: OpenAI.ChatCompletionMessageParam[], ctx
   }
   out(gray(`Stopped after ${MAX_STEPS} steps.\n`));
   return { text, finished: false };
+}
+
+/* Small models often stop by announcing a step ("Let me create the files:")
+   without making the call, or stop while their check still fails. Returns
+   what to tell the agent to make it continue, or null if it really is done. */
+async function unfinished(text: string, ctx: Ctx): Promise<string | null> {
+  if (ctx.node.check) {
+    const c = await runCheck(ctx.node.check, ctx);
+    if (c.status === "pass") return null;
+    if (c.status === "fail") {
+      return `You stopped, but the check still fails, so the task is not done:\n${c.output}\nKeep working: call tools now. Don't describe what you will do; do it.`;
+    }
+  }
+  const last = text.trim().split("\n").at(-1) ?? "";
+  if (/:\s*$/.test(last) || /^(now,? |next,? |ok,? )?(let me|i'll|i will)\b/i.test(last)) {
+    return "You described a next step but didn't make the tool call. Make the call now.";
+  }
+  return null;
 }
 
 /* Runs a child agent on a fresh context, then runs the check itself. The

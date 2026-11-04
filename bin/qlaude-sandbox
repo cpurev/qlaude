@@ -6,7 +6,7 @@ export PATH="$HOME/.docker/bin:$PATH"  # Docker Desktop installs its CLI and hel
 DOCKER=docker
 TTY=""
 [ -t 0 ] && [ -t 1 ] && TTY="-t"
-exec "$DOCKER" run --rm -i $TTY \
+exec "$DOCKER" run --rm -i $TTY --label qlaude \
   -v "$PWD":/work \
   -e QLAUDE_MODEL -e QLAUDE_BUDGET -e QLAUDE_THINK \
   --user "$(id -u):$(id -g)" \
