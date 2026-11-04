@@ -1,0 +1,5 @@
+#!/bin/sh
+# The goldfish MCP server. Claude Code starts it from a planner project's
+# .mcp.json; the argument is the code folder (default: app).
+DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+exec "$DIR/node_modules/.bin/tsx" "$DIR/src/mcp.ts" "$@"

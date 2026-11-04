@@ -1,0 +1,15 @@
+#!/bin/sh
+# Runs qlaude in Docker with only the current directory mounted at /work.
+# Same arguments as qlaude, e.g.: qlaude-sandbox --task task.json --approve all
+set -e
+export PATH="$HOME/.docker/bin:$PATH"  # Docker Desktop installs its CLI and helpers here
+DOCKER=docker
+TTY=""
+[ -t 0 ] && [ -t 1 ] && TTY="-t"
+exec "$DOCKER" run --rm -i $TTY \
+  -v "$PWD":/work \
+  -e QLAUDE_MODEL -e QLAUDE_BUDGET -e QLAUDE_THINK \
+  --user "$(id -u):$(id -g)" \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --pids-limit 256 --memory 2g --cpus 4 \
+  qlaude "$@"

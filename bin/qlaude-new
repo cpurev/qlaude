@@ -1,0 +1,28 @@
+#!/bin/sh
+# Creates a planner project: qlaude-new ~/projects/todo
+# Opus plans from the project root; the workers build in app/.
+set -e
+[ -n "$1" ] || { echo "usage: qlaude-new <dir>"; exit 2; }
+[ -e "$1" ] && { echo "$1 already exists"; exit 2; }
+QLAUDE="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+
+cp -R "$QLAUDE/templates/planner" "$1"
+mkdir -p "$1/app"
+cat > "$1/.mcp.json" <<JSON
+{
+  "mcpServers": {
+    "goldfish": {
+      "command": "$QLAUDE/bin/qlaude-mcp",
+      "args": ["app"],
+      "timeout": 3600000
+    }
+  }
+}
+JSON
+
+echo "Created $1"
+echo "Next:"
+echo "  1. Write what you want in $1/SPEC.md"
+echo "  2. cd $1 && MCP_TOOL_TIMEOUT=3600000 claude --strict-mcp-config --mcp-config .mcp.json"
+echo "     (--strict-mcp-config: load only the goldfish server, none of your other MCP servers)"
+echo "  3. Ask: \"Read SPEC.md, write contracts and a plan, then build it.\""

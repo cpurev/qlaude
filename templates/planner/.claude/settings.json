@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./app/**)",
+      "Edit(./app/**)",
+      "Bash",
+      "Grep",
+      "NotebookEdit"
+    ],
+    "allow": [
+      "mcp__goldfish__*",
+      "Edit(./PLAN.md)",
+      "Edit(./contracts/**)"
+    ]
+  },
+  "enabledMcpjsonServers": ["goldfish"]
+}

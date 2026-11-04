@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs qlaude in the directory you call it from. Resolves symlinks so it works from ~/.local/bin.
+DIR="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+exec "$DIR/node_modules/.bin/tsx" "$DIR/src/main.ts" "$@"
