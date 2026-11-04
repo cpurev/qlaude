@@ -152,3 +152,7 @@ The goldfish MCP server (`src/mcp.ts`) gives the planner three tools:
 - `run_log(id)`: one line per agent of a run (status, summary, task) for diagnosing ✗.
 
 `--strict-mcp-config` keeps your other MCP servers out of the planner's context. `MCP_TOOL_TIMEOUT` (and the per-server `timeout` in `.mcp.json`) gives long dispatches up to an hour.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
